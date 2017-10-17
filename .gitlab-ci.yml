@@ -1,0 +1,43 @@
+image: docker:latest
+
+variables:
+  BUILD_TAG: $CI_REGISTRY_IMAGE/ci:$CI_COMMIT_REF_SLUG
+  RELEASE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+  LATEST_TAG: $CI_REGISTRY_IMAGE:latest
+
+before_script:
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+stages:
+  - build
+  - release
+
+build:
+  stage: build
+  tags: 
+  - docker
+  script:
+  - docker build -t $BUILD_TAG docker
+  - docker push $BUILD_TAG
+
+release-tagged:
+  stage: release
+  tags: 
+  - docker
+  script:
+  - docker pull $BUILD_TAG
+  - docker tag $BUILD_TAG $RELEASE_TAG  
+  - docker push $RELEASE_TAG
+  only:
+  - tags # only created for tagged versions
+
+release-latest:
+  stage: release
+  tags: 
+  - docker
+  script:
+  - docker pull $BUILD_TAG
+  - docker tag $BUILD_TAG $LATEST_TAG
+  - docker push $LATEST_TAG
+  only:
+  - master 
